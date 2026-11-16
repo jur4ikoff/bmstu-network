@@ -1,51 +1,26 @@
-// int main(void) {
-//     return 0;
-// }
+#include "webserver/tcp_listener.hpp"
+#include "config.hpp"
 
-// Создаём дескриптор epoll. Нам нужен лишь один на всё приложение, он будет мониторить все сокеты
-// Аргумент функции игнорируется (раньше это было не так, но сейчас так), так что напишите здесь своё любимое число
-int pollingfd = epoll_create( 0xCAFE ); 
+#include <exception>
+#include <iostream>
 
-if ( pollingfd < 0 )
- // ошибка
-
-// Инициализируем структуру epoll_event
-struct epoll_event ev = { 0 };
-
-// Ассоциируйте соединение с наблюдаемым событием. Вы можете ассоциировать всё, что угодно
-// epoll никак не использует эту информацию. Можно, например, сохранить указатель на объект класса соединения
-ev.data.ptr = pConnection1;
-
-// Наблюдаем события прихода данных, по одному за раз
-ev.events = EPOLLIN | EPOLLONESHOT;
-
-// Добавляем дескриптор в список наблюдаемых. Это можно сделать даже из другого потока
-// пока первый ожидает в вызове epoll_wait - всё сработает правильно
-if ( epoll_ctl( epollfd, EPOLL_CTL_ADD, pConnection1->getSocket(), &ev ) != 0 )
-    // report error
-
-// будем выбирать из очереди событий по 20 событий за раз
-struct epoll_event pevents[ 20 ];
-
-// Ждём 10 секунд
-int ready = epoll_wait( pollingfd, pevents, 20, 10000 );
-
-// Проверяем успешность вызова
-if ( ret == -1 )
-    // ошибка
-else if ( ret == 0 )
-    // таймаут, событий не произошло
-else
+int main()
 {
-    // просматриваем полученный список событий
-    for ( int i = 0; i < ret; i++ )
+    try
     {
-        if ( pevents[i].events & EPOLLIN )
-        {
-            // получаем ранее ассоциированный с событием указатель на соединение, обрабатываем его
-            Connection * c = (Connection*) pevents[i].data.ptr;
-            c->handleReadEvent();
-         }
+        const ListenConfig config("127.0.0.1", 8080);
+        TcpListener listener(config);
+
+        std::cout
+            << "Listening on "
+            << config.address() << ':' << config.port()
+            << '\n';
     }
+    catch (const std::exception &error)
+    {
+        std::cerr << "Startup failed: " << error.what() << '\n';
+        return 1;
+    }
+
+    return 0;
 }
-Объяснить с
